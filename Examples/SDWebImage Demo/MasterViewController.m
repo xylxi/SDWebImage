@@ -17,7 +17,7 @@
 @interface MyCustomTableViewCell : UITableViewCell
 
 @property (nonatomic, strong) UILabel *customTextLabel;
-@property (nonatomic, strong) FLAnimatedImageView *customImageView;
+@property (nonatomic, strong) UIImageView *customImageView;
 
 @end
 
@@ -26,7 +26,7 @@
 
 - (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier {
     if (self = [super initWithStyle:style reuseIdentifier:reuseIdentifier]) {
-        _customImageView = [[FLAnimatedImageView alloc] initWithFrame:CGRectMake(20.0, 2.0, 60.0, 40.0)];
+        _customImageView = [[UIImageView alloc] initWithFrame:CGRectMake(20.0, 2.0, 60.0, 40.0)];
         [self.contentView addSubview:_customImageView];
         _customTextLabel = [[UILabel alloc] initWithFrame:CGRectMake(100.0, 12.0, 200, 20.0)];
         [self.contentView addSubview:_customTextLabel];

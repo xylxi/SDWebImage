@@ -381,10 +381,12 @@ FOUNDATION_STATIC_INLINE NSUInteger SDCacheCostForImage(UIImage *image) {
         }
         return nil;
     }
-
+    // 只有在内存缓存中没有找到key对应的iamge，才会创建一个operation，否则nil
     NSOperation *operation = [NSOperation new];
     dispatch_async(self.ioQueue, ^{
+        // 将磁盘检索任务放入串行队列中，等待被调度
         if (operation.isCancelled) {
+            // 当被调度block时候，判断该operation是否被取消了
             // do not call the completion if cancelled
             return;
         }
@@ -398,6 +400,9 @@ FOUNDATION_STATIC_INLINE NSUInteger SDCacheCostForImage(UIImage *image) {
             }
 
             if (doneBlock) {
+                // doneBlock用于回调去处理别的操作
+                // 1、找到iamge，回调回去
+                // 2、没有找到iamge，那么回调回去生成从网络下载iamge的任务
                 dispatch_async(dispatch_get_main_queue(), ^{
                     doneBlock(diskImage, diskData, SDImageCacheTypeDisk);
                 });

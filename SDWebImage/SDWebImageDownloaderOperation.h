@@ -37,7 +37,7 @@ extern NSString * _Nonnull const SDWebImageDownloadFinishNotification;
 
 @end
 
-
+// 用于正在请求网络image的data数据的operation
 @interface SDWebImageDownloaderOperation : NSOperation <SDWebImageDownloaderOperationInterface, SDWebImageOperation, NSURLSessionTaskDelegate, NSURLSessionDataDelegate>
 
 /**

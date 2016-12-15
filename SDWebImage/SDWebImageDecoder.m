@@ -17,6 +17,8 @@ static const size_t kBitsPerComponent = 8;
 
 + (nullable UIImage *)decodedImageWithImage:(nullable UIImage *)image {
     if (![UIImage shouldDecodeImage:image]) {
+        // 如果不需要解码就可以直接返回image
+        // 例如png，系统的解码速度很快的就没有必要做处理
         return image;
     }
     
@@ -227,6 +229,7 @@ static const CGFloat kDestSeemOverlap = 2.0f;   // the numbers of pixels to over
                      alpha == kCGImageAlphaPremultipliedLast);
     // do not decode images with alpha
     if (anyAlpha) {
+        // png都是含有alpha通道的
         return NO;
     }
     

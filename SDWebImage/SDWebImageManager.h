@@ -178,6 +178,7 @@ SDWebImageManager *manager = [SDWebImageManager sharedManager];
 }];
 
  * @endcode
+ * 运行用户自定义生成缓存的规则
  */
 @property (nonatomic, copy, nullable) SDWebImageCacheKeyFilterBlock cacheKeyFilter;
 

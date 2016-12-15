@@ -109,6 +109,8 @@ typedef NSMutableDictionary<NSString *, id> SDCallbacksDictionary;
     __block BOOL shouldCancel = NO;
     dispatch_barrier_sync(self.barrierQueue, ^{
         [self.callbackBlocks removeObjectIdenticalTo:token];
+        // 因为对于一个url，可能多个iamgeView发送请求
+        // 如果只用所有的发送请求的取消请求才会真正的取消请求
         if (self.callbackBlocks.count == 0) {
             shouldCancel = YES;
         }
@@ -133,12 +135,13 @@ typedef NSMutableDictionary<NSString *, id> SDCallbacksDictionary;
         if (hasApplication && [self shouldContinueWhenAppEntersBackground]) {
             __weak __typeof__ (self) wself = self;
             UIApplication * app = [UIApplicationClass performSelector:@selector(sharedApplication)];
+            // 应用回到后台后，开启后台任务超时时候的回调
             self.backgroundTaskId = [app beginBackgroundTaskWithExpirationHandler:^{
                 __strong __typeof (wself) sself = wself;
 
                 if (sself) {
                     [sself cancel];
-
+                    // beginBackgroundTaskWithExpirationHandler和endBackgroundTask是成双对的
                     [app endBackgroundTask:sself.backgroundTaskId];
                     sself.backgroundTaskId = UIBackgroundTaskInvalid;
                 }
@@ -224,6 +227,7 @@ typedef NSMutableDictionary<NSString *, id> SDCallbacksDictionary;
 
 - (void)reset {
     dispatch_barrier_async(self.barrierQueue, ^{
+        // 因为这个属性，在SDWebImageDownloader的addProgressCallback方法中会用到
         [self.callbackBlocks removeAllObjects];
     });
     self.dataTask = nil;
@@ -299,16 +303,19 @@ didReceiveResponse:(NSURLResponse *)response
     [self.imageData appendData:data];
 
     if ((self.options & SDWebImageDownloaderProgressiveDownload) && self.expectedSize > 0) {
+        // 解压缩当前缩下载到的image的data
         // The following code is from http://www.cocoaintheshell.com/2011/05/progressive-images-download-imageio/
         // Thanks to the author @Nyx0uf
 
         // Get the total bytes downloaded
         const NSInteger totalSize = self.imageData.length;
-
+        // http://ios.jobbole.com/87233/
         // Update the data source, we must pass ALL the data, not just the new bytes
+        // CGImageSourceRef抽象了对读图像数据的通道，读取图像要通过它，它自己本身不读取图像的任何数据
         CGImageSourceRef imageSource = CGImageSourceCreateWithData((__bridge CFDataRef)self.imageData, NULL);
 
         if (width + height == 0) {
+            // 如果width和height为0,说明第一次获取图片的这些属性
             CFDictionaryRef properties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, NULL);
             if (properties) {
                 NSInteger orientationValue = -1;
@@ -325,6 +332,7 @@ didReceiveResponse:(NSURLResponse *)response
                 // oriented incorrectly sometimes. (Unlike the image born of initWithData
                 // in didCompleteWithError.) So save it here and pass it on later.
 #if SD_UIKIT || SD_WATCH
+                // 使用方向，因为后面会用到
                 orientation = [[self class] orientationFromPropertyValue:(orientationValue == -1 ? 1 : orientationValue)];
 #endif
             }
@@ -332,13 +340,16 @@ didReceiveResponse:(NSURLResponse *)response
 
         if (width + height > 0 && totalSize < self.expectedSize) {
             // Create the image
+            // 使用现有的数据创建图片对象，如果数据中存有多张图片，则取第一张：Create the image
             CGImageRef partialImageRef = CGImageSourceCreateImageAtIndex(imageSource, 0, NULL);
 
 #if SD_UIKIT || SD_WATCH
             // Workaround for iOS anamorphic image
             if (partialImageRef) {
+                // 当前下载到的图片数据的信息
                 const size_t partialHeight = CGImageGetHeight(partialImageRef);
                 CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+                // 通过bitmap，位图提前解码图片数据
                 CGContextRef bmContext = CGBitmapContextCreate(NULL, width, height, 8, width * 4, colorSpace, kCGBitmapByteOrderDefault | kCGImageAlphaPremultipliedFirst);
                 CGColorSpaceRelease(colorSpace);
                 if (bmContext) {
@@ -376,7 +387,7 @@ didReceiveResponse:(NSURLResponse *)response
 
         CFRelease(imageSource);
     }
-
+    // 遍历回调
     for (SDWebImageDownloaderProgressBlock progressBlock in [self callbacksForKey:kProgressCallbackKey]) {
         progressBlock(self.imageData.length, self.expectedSize, self.request.URL);
     }
@@ -489,6 +500,7 @@ didReceiveResponse:(NSURLResponse *)response
 #pragma mark Helper methods
 
 #if SD_UIKIT || SD_WATCH
+// http://www.tanhao.me/pieces/1019.html/
 + (UIImageOrientation)orientationFromPropertyValue:(NSInteger)value {
     switch (value) {
         case 1:
@@ -529,6 +541,7 @@ didReceiveResponse:(NSURLResponse *)response
                             imageData:(nullable NSData *)imageData
                                 error:(nullable NSError *)error
                              finished:(BOOL)finished {
+    // 遍历回调
     NSArray<id> *completionBlocks = [self callbacksForKey:kCompletedCallbackKey];
     dispatch_main_async_safe(^{
         for (SDWebImageDownloaderCompletedBlock completedBlock in completionBlocks) {

@@ -40,6 +40,7 @@ static char TAG_ACTIVITY_SHOW;
     
     if (!(options & SDWebImageDelayPlaceholder)) {
         dispatch_main_async_safe(^{
+            // 如果操作选项中没有包含SDWebImageDelayPlaceholder
             [self sd_setImage:placeholder imageData:nil basedOnClassOrViaCustomSetImageBlock:setImageBlock];
         });
     }
@@ -47,10 +48,14 @@ static char TAG_ACTIVITY_SHOW;
     if (url) {
         // check if activityView is enabled or not
         if ([self sd_showActivityIndicatorView]) {
+            // 如果需要加载动画
             [self sd_addActivityIndicator];
         }
         
         __weak __typeof(self)wself = self;
+        // 这个operation是用于检索url对应的image
+        // 1. 从缓存中查找
+        // 2. 从网络中下载
         id <SDWebImageOperation> operation = [SDWebImageManager.sharedManager loadImageWithURL:url options:options progress:progressBlock completed:^(UIImage *image, NSData *data, NSError *error, SDImageCacheType cacheType, BOOL finished, NSURL *imageURL) {
             __strong __typeof (wself) sself = wself;
             [sself sd_removeActivityIndicator];
@@ -59,20 +64,26 @@ static char TAG_ACTIVITY_SHOW;
             }
             dispatch_main_async_safe(^{
                 if (!sself) {
-                    return;
+                    return;// 如果imageview已经被释放了,就返回
                 }
                 if (image && (options & SDWebImageAvoidAutoSetImage) && completedBlock) {
+                    // 如果下载到了iamge，但是options包含SDWebImageAvoidAutoSetImage选项，
+                    //那么不设置 wself.iamge = image;
                     completedBlock(image, error, cacheType, url);
                     return;
                 } else if (image) {
+                    // 设置image
                     [sself sd_setImage:image imageData:data basedOnClassOrViaCustomSetImageBlock:setImageBlock];
                     [sself sd_setNeedsLayout];
                 } else {
                     if ((options & SDWebImageDelayPlaceholder)) {
+                        // SDWebImageDelayPlaceholder选项是，在检索image的过程中
+                        // 不设置iamge，当检索结束后，没有找到iamge，那么设置占位符
                         [sself sd_setImage:placeholder imageData:nil basedOnClassOrViaCustomSetImageBlock:setImageBlock];
                         [sself sd_setNeedsLayout];
                     }
                 }
+                
                 if (completedBlock && finished) {
                     completedBlock(image, error, cacheType, url);
                 }

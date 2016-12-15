@@ -15,10 +15,13 @@
 
 
 @interface SDWebImageDownloader () <NSURLSessionTaskDelegate, NSURLSessionDataDelegate>
-
+// 调度operation的队列
 @property (strong, nonatomic, nonnull) NSOperationQueue *downloadQueue;
+// 记录最后一个请求的operation，为了实现FIFO
 @property (weak, nonatomic, nullable) NSOperation *lastAddedOperation;
+// operation的类
 @property (assign, nonatomic, nullable) Class operationClass;
+// key为url，value为下载类的对象
 @property (strong, nonatomic, nonnull) NSMutableDictionary<NSURL *, SDWebImageDownloaderOperation *> *URLOperations;
 @property (strong, nonatomic, nullable) SDHTTPHeadersMutableDictionary *HTTPHeaders;
 // This queue is used to serialize the handling of the network responses of all the download operation in a single queue
@@ -157,6 +160,7 @@
         request.HTTPShouldHandleCookies = (options & SDWebImageDownloaderHandleCookies);
         request.HTTPShouldUsePipelining = YES;
         if (sself.headersFilter) {
+            // 如果有针对url设置请求头部信息，可以设置这个block
             request.allHTTPHeaderFields = sself.headersFilter(url, [sself.HTTPHeaders copy]);
         }
         else {
@@ -180,6 +184,7 @@
         [sself.downloadQueue addOperation:operation];
         if (sself.executionOrder == SDWebImageDownloaderLIFOExecutionOrder) {
             // Emulate LIFO execution order by systematically adding new operations as last operation's dependency
+            // 队列的方式调度
             [sself.lastAddedOperation addDependency:operation];
             sself.lastAddedOperation = operation;
         }
@@ -198,6 +203,10 @@
     });
 }
 
+// 对于请求的url
+// 如果已经该url创建了对应了的SDWebImageDownloaderOperation，并放入URLOperations，那么保存该url对应的回调block
+// 如果没有创建过SDWebImageDownloaderOperation，那么创建一个在保存block
+// 防止同一个url，发送多次请求
 - (nullable SDWebImageDownloadToken *)addProgressCallback:(SDWebImageDownloaderProgressBlock)progressBlock
                                            completedBlock:(SDWebImageDownloaderCompletedBlock)completedBlock
                                                    forURL:(nullable NSURL *)url
@@ -215,7 +224,10 @@
     dispatch_barrier_sync(self.barrierQueue, ^{
         SDWebImageDownloaderOperation *operation = self.URLOperations[url];
         if (!operation) {
+            // 如果该url还没有生成过operation
+            // 那么创建一个
             operation = createCallback();
+            // 保存起来
             self.URLOperations[url] = operation;
 
             __weak SDWebImageDownloaderOperation *woperation = operation;
@@ -227,6 +239,7 @@
               };
             };
         }
+        // 将进度回调block和完成后的block，缓存起来
         id downloadOperationCancelToken = [operation addHandlersForProgress:progressBlock completed:completedBlock];
 
         token = [SDWebImageDownloadToken new];
