@@ -108,7 +108,7 @@
 - (id <SDWebImageOperation>)loadImageWithURL:(nullable NSURL *)url
                                      options:(SDWebImageOptions)options
                                     progress:(nullable SDWebImageDownloaderProgressBlock)progressBlock
-                                   completed:(nullable SDInternalCompletionBlock)completedBlock {
+                                   completed:(nullable SDInternalCompletionBlock)completedBlock { 
     // Invoking this method without a completedBlock is pointless
     NSAssert(completedBlock != nil, @"If you mean to prefetch the image, use -[SDWebImagePrefetcher prefetchURLs] instead");
 
@@ -146,7 +146,8 @@
     }
     NSString *key = [self cacheKeyForURL:url];
 
-    operation.cacheOperation = [self.imageCache queryCacheOperationForKey:key done:^(UIImage *cachedImage, NSData *cachedData, SDImageCacheType cacheType) {
+    // 1. cache中查找image
+    operation.cacheOperation = [self.imageCache queryCacheOperationForKey:key done:^(UIImage *cachedImage, NSData *cachedData, SDImageCacheType cacheType) { 
         if (operation.isCancelled) {
             // 检索完缓存后,才触发done回到,但是operation被取消了
             // 从运行的operation数组中，将operation取消
@@ -245,12 +246,13 @@
                 }
             }];
             operation.cancelBlock = ^{
-                // 设置operation的取消block，具体是取消网络请求
+                // 找到对应的operation，然后从operation中的回调数组中，删除回调
                 [self.imageDownloader cancel:subOperationToken];
                 __strong __typeof(weakOperation) strongOperation = weakOperation;
                 [self safelyRemoveOperationFromRunning:strongOperation];
             };
         } else if (cachedImage) {
+            // 从缓存中获取到image
             __strong __typeof(weakOperation) strongOperation = weakOperation;
             [self callCompletionBlockForOperation:strongOperation completion:completedBlock image:cachedImage data:cachedData error:nil cacheType:cacheType finished:YES url:url];
             [self safelyRemoveOperationFromRunning:operation];

@@ -65,6 +65,7 @@
         // Add your NTLM image url to the array below and replace the credentials
         [SDWebImageManager sharedManager].imageDownloader.username = @"httpwatch";
         [SDWebImageManager sharedManager].imageDownloader.password = @"httpwatch01";
+        [SDWebImageManager sharedManager].imageDownloader.maxConcurrentDownloads = 1;
         
         _objects = [NSMutableArray arrayWithObjects:
                     @"http://www.httpwatch.com/httpgallery/authentication/authenticatedimage/default.aspx?0.35786508303135633",     // requires HTTP auth, used to demo the NTLM auth
@@ -82,6 +83,7 @@
         }
 
     }
+//    SDWebImageManager.sharedManager.imageDownloader.shouldDecompressImages = NO;
     [SDWebImageManager.sharedManager.imageDownloader setValue:@"SDWebImage Demo" forHTTPHeaderField:@"AppName"];
     SDWebImageManager.sharedManager.imageDownloader.executionOrder = SDWebImageDownloaderLIFOExecutionOrder;
     return self;
@@ -130,7 +132,7 @@
     cell.customTextLabel.text = [NSString stringWithFormat:@"Image #%ld", (long)indexPath.row];
     [cell.customImageView sd_setImageWithURL:[NSURL URLWithString:_objects[indexPath.row]]
                             placeholderImage:placeholderImage
-                                     options:indexPath.row == 0 ? SDWebImageRefreshCached : 0];
+                                     options:0];
     return cell;
 }
 

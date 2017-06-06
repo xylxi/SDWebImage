@@ -156,6 +156,9 @@ FOUNDATION_STATIC_INLINE NSUInteger SDCacheCostForImage(UIImage *image) {
     }
 }
 
+/**
+ * key->文件的存储路径
+ */
 - (nullable NSString *)cachePathForKey:(nullable NSString *)key inPath:(nonnull NSString *)path {
     NSString *filename = [self cachedFileNameForKey:key];
     return [path stringByAppendingPathComponent:filename];
@@ -165,6 +168,9 @@ FOUNDATION_STATIC_INLINE NSUInteger SDCacheCostForImage(UIImage *image) {
     return [self cachePathForKey:key inPath:self.diskCachePath];
 }
 
+/**
+ * key->文件名字
+ */
 - (nullable NSString *)cachedFileNameForKey:(nullable NSString *)key {
     const char *str = key.UTF8String;
     if (str == NULL) {
@@ -179,6 +185,9 @@ FOUNDATION_STATIC_INLINE NSUInteger SDCacheCostForImage(UIImage *image) {
     return filename;
 }
 
+/**
+ * fullName->缓存路径
+ */
 - (nullable NSString *)makeDiskCachePath:(nonnull NSString*)fullNamespace {
     NSArray<NSString *> *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
     return [paths[0] stringByAppendingPathComponent:fullNamespace];
@@ -221,7 +230,9 @@ FOUNDATION_STATIC_INLINE NSUInteger SDCacheCostForImage(UIImage *image) {
             NSData *data = imageData;
             
             if (!data && image) {
+                // 获取图片的格式
                 SDImageFormat imageFormatFromData = [NSData sd_imageFormatForImageData:data];
+                // 根据图片格式和图片获取data
                 data = [image sd_imageDataAsFormat:imageFormatFromData];
             }
             

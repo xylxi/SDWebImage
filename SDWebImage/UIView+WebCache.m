@@ -27,6 +27,7 @@ static char TAG_ACTIVITY_SHOW;
     return objc_getAssociatedObject(self, &imageURLKey);
 }
 
+
 - (void)sd_internalSetImageWithURL:(nullable NSURL *)url
                   placeholderImage:(nullable UIImage *)placeholder
                            options:(SDWebImageOptions)options
@@ -34,13 +35,16 @@ static char TAG_ACTIVITY_SHOW;
                      setImageBlock:(nullable SDSetImageBlock)setImageBlock
                           progress:(nullable SDWebImageDownloaderProgressBlock)progressBlock
                          completed:(nullable SDExternalCompletionBlock)completedBlock {
+    // operationKey有什么用呢？--> validOperationKey = @"UIImageView"
     NSString *validOperationKey = operationKey ?: NSStringFromClass([self class]);
+    // 取消下载
     [self sd_cancelImageLoadOperationWithKey:validOperationKey];
+    // imageView持有url
     objc_setAssociatedObject(self, &imageURLKey, url, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     
     if (!(options & SDWebImageDelayPlaceholder)) {
+        // 如果操作选项中没有包含SDWebImageDelayPlaceholder
         dispatch_main_async_safe(^{
-            // 如果操作选项中没有包含SDWebImageDelayPlaceholder
             [self sd_setImage:placeholder imageData:nil basedOnClassOrViaCustomSetImageBlock:setImageBlock];
         });
     }
@@ -53,9 +57,9 @@ static char TAG_ACTIVITY_SHOW;
         }
         
         __weak __typeof(self)wself = self;
-        // 这个operation是用于检索url对应的image
-        // 1. 从缓存中查找
-        // 2. 从网络中下载
+        // 1、这个operation是用于检索url对应的image
+        //  1.1 从缓存中查找
+        //  1.2 从网络中下载
         id <SDWebImageOperation> operation = [SDWebImageManager.sharedManager loadImageWithURL:url options:options progress:progressBlock completed:^(UIImage *image, NSData *data, NSError *error, SDImageCacheType cacheType, BOOL finished, NSURL *imageURL) {
             __strong __typeof (wself) sself = wself;
             [sself sd_removeActivityIndicator];
@@ -89,6 +93,7 @@ static char TAG_ACTIVITY_SHOW;
                 }
             });
         }];
+        // 2、持用operations
         [self sd_setImageLoadOperation:operation forKey:validOperationKey];
     } else {
         dispatch_main_async_safe(^{

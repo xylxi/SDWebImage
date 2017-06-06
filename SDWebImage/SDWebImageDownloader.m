@@ -149,6 +149,7 @@
     __weak SDWebImageDownloader *wself = self;
 
     return [self addProgressCallback:progressBlock completedBlock:completedBlock forURL:url createCallback:^SDWebImageDownloaderOperation *{
+        // 创建下载操作的block
         __strong __typeof (wself) sself = wself;
         NSTimeInterval timeoutInterval = sself.downloadTimeout;
         if (timeoutInterval == 0.0) {
@@ -288,7 +289,7 @@ didReceiveResponse:(NSURLResponse *)response
 
     // Identify the operation that runs this task and pass it the delegate method
     SDWebImageDownloaderOperation *dataOperation = [self operationWithTask:dataTask];
-
+    // 将数据交给对应的dataOperation处理
     [dataOperation URLSession:session dataTask:dataTask didReceiveData:data];
 }
 
